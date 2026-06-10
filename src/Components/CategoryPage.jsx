@@ -21,9 +21,16 @@ const CategoryPage = () => {
 
   // Load user
   useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (!stored) { navigate("/"); return; }
-    setUser(JSON.parse(stored));
+    try {
+      const stored = localStorage.getItem("user");
+      if (!stored) { navigate("/"); return; }
+      const userData = JSON.parse(stored);
+      if (!userData) { navigate("/"); return; }
+      setUser(userData);
+    } catch (e) {
+      localStorage.removeItem("user");
+      navigate("/");
+    }
   }, [navigate]);
 
   // Load categories & menu
@@ -57,8 +64,8 @@ const CategoryPage = () => {
     setAddingId(menuItemId);
     try {
       const userId = user._id || user.id || user.email;
-      await axios.post(`${API_BASE}/api/cart/add`, { menuItemId, quantity: 1, userId });
-      fetchCart();
+      const res = await axios.post(`${API_BASE}/api/cart/add`, { menuItemId, quantity: 1, userId });
+      setCart(res.data.cart || { items: [], totalAmount: 0 });
     } catch (err) {
       alert(`Failed: ${err.response?.data?.message || err.message}`);
     } finally {
@@ -71,8 +78,8 @@ const CategoryPage = () => {
     setCartLoading(prev => ({ ...prev, [menuItemId]: true }));
     try {
       const userId = user._id || user.id || user.email;
-      await axios.post(`${API_BASE}/api/cart/update`, { userId, menuItemId, quantity: newQuantity });
-      fetchCart();
+      const res = await axios.post(`${API_BASE}/api/cart/update`, { userId, menuItemId, quantity: newQuantity });
+      setCart(res.data.cart || { items: [], totalAmount: 0 });
     } catch (err) {
       alert("Failed to update quantity");
     } finally {

@@ -20,16 +20,22 @@ const CheckoutPage = () => {
   });
 
   useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (!stored) { navigate("/"); return; }
-    const userData = JSON.parse(stored);
-    setUser(userData);
-    fetchCart(userData);
-    // Pre-fill fields from user profile if available
-    if (userData.name) setAddress(a => ({ ...a, name: userData.name }));
-    if (userData.mobile) setAddress(a => ({ ...a, mobile: userData.mobile }));
-    if (userData.address1) setAddress(a => ({ ...a, address1: userData.address1 }));
-    if (userData.address2) setAddress(a => ({ ...a, address2: userData.address2 }));
+    try {
+      const stored = localStorage.getItem("user");
+      if (!stored) { navigate("/"); return; }
+      const userData = JSON.parse(stored);
+      if (!userData) { navigate("/"); return; }
+      setUser(userData);
+      fetchCart(userData);
+      // Pre-fill fields from user profile if available
+      if (userData.name) setAddress(a => ({ ...a, name: userData.name }));
+      if (userData.mobile) setAddress(a => ({ ...a, mobile: userData.mobile }));
+      if (userData.address1) setAddress(a => ({ ...a, address1: userData.address1 }));
+      if (userData.address2) setAddress(a => ({ ...a, address2: userData.address2 }));
+    } catch (e) {
+      localStorage.removeItem("user");
+      navigate("/");
+    }
   }, [navigate]);
 
   const fetchCart = async (u) => {
@@ -47,8 +53,8 @@ const CheckoutPage = () => {
     setCartLoading(p => ({ ...p, [menuItemId]: true }));
     try {
       const userId = user._id || user.id || user.email;
-      await axios.post(`${API_BASE}/api/cart/update`, { userId, menuItemId, quantity: newQty });
-      fetchCart(user);
+      const res = await axios.post(`${API_BASE}/api/cart/update`, { userId, menuItemId, quantity: newQty });
+      setCart(res.data.cart || { items: [], totalAmount: 0 });
     } finally {
       setCartLoading(p => ({ ...p, [menuItemId]: false }));
     }
